@@ -1,0 +1,105 @@
+#!/usr/bin/env python3
+# remove_jpg_if_raw_exists
+
+import os,shutil
+
+def main():
+    print('\n'+os.path.realpath(__file__)+'\n')
+
+    red       = '\033[1;31m'
+    green     = '\033[0;32m'
+    yellow    = '\033[1;33m'
+    blue      = '\033[1;34m'
+    magenta   = '\033[0;35m'
+    cyan      = '\033[1;36m'
+    white     = '\033[1;37m'
+    end_color = '\033[0m'
+
+    raw_extension = ['.CR2','.ORF','.RAW','.ARW']
+    jpg_extension = '.JPG'
+
+    trash_it = os.environ['HOME']+'/.Trash'
+    dir_list = os.listdir(os.getcwd())
+
+    raw_count    = 0
+    jpg_count    = 0
+    other_count  = 0
+    jpg_rm_count = 0
+
+    trashed_log  = ['Removing these JPG photos\n-------------------------']
+    keep_log     = ['Keeping these files\n----------------------------']
+
+
+    for filename in dir_list:
+
+        if jpg_extension in filename:
+
+            jpg_count += 1
+            (photo, extension) = os.path.splitext(filename)
+
+            for raw_ext in raw_extension:
+                raw_compliment = ''
+
+                # if both JPG and RAW files exist, trash the JPG
+                if (photo+jpg_extension in dir_list) and (photo+raw_ext in dir_list):
+                    raw_compliment = photo+raw_ext
+                    trashed_log.append(photo+jpg_extension)
+                    jpg_rm_count += 1
+                    shutil.move(photo+jpg_extension,trash_it)
+                    break
+
+            # if no RAW compliment was found, keep the JPG
+            if raw_compliment == '':
+                keep_log.append(photo+jpg_extension+' - no RAW compliment')
+
+        # get file count
+        elif any(raw in filename for raw in raw_extension):
+            raw_count += 1
+            keep_log.append(filename)
+        else:
+            other_count += 1
+            keep_log.append(filename+' - not a recognized RAW file')
+
+    new_dir_list = os.listdir(os.getcwd())
+
+    print('\nDeleted {} JPG photos with RAW compliments.\n\
+--------------------------------------------\n\
+\n\
+Directory size : {} --> {}\n\
+JPG photos     : {} --> {}\n\
+RAW photos     : {}\n\
+Other files    : {}\n'\
+    .format(yellow+ str(jpg_rm_count) +end_color,\
+        yellow+ str(len(dir_list)) +end_color, green+ str(len(new_dir_list)) +end_color,\
+        yellow+ str(jpg_count) +end_color,     green+ str(jpg_count-jpg_rm_count) +end_color,\
+        green+ str(raw_count) +end_color,\
+        green+ str(other_count) +end_color))
+
+    # make sure the counts add up
+    try:
+        assert jpg_count+raw_count+other_count == len(dir_list)
+    except AssertionError:
+        print(yellow+ 'File count [ {} ] does not equal directory count [ {} ]' +end_color.format(jpg_count+raw_count+other_count,len(dir_list)))
+
+    # wrap up the logs
+    keep_log.append('\n--> {} Total Files To Keep'.format(str(raw_count+other_count+(jpg_count-jpg_rm_count))))
+    trashed_log.append('\n--> {} Total JPGs To Trash'.format(str(jpg_rm_count)))
+
+    print('Keeping these JPG photos [{}]\n------------------------'.format(jpg_count-jpg_rm_count))
+    for photo in keep_log:
+        if '.JPG' in photo:
+            print(green+ photo +end_color)
+    print('------------------------\n')
+
+    # create the log file
+    with open('photo_remove.log','w') as log:
+        log.write(os.path.realpath(__file__))
+        log.write('\n\n')
+        log.write('\n'.join(keep_log))
+        log.write('\n\n')
+        log.write('\n'.join(trashed_log))
+        log.write('\n------- END OF FILE -------')
+
+if __name__ == '__main__': main()
+
+# EOF
